@@ -4,6 +4,10 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -19,13 +23,21 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), SensorEventListener {
     // Константы для запросов
     companion object {
         private const val REQUEST_CODE_PERMISSION = 100
         private const val REQUEST_CODE_GALLERY = 101
         private const val REQUEST_CODE_COLOR = 102
+        private const val SHAKE_THRESHOLD = 7f
     }
+
+    private lateinit var sensorManager: SensorManager
+    private var accelerometer: Sensor? = null
+    private var lastShakeTime: Long = 0
+    private var lastX: Float = 0.0f
+    private var lastY: Float = 0.0f
+    private var lastZ: Float = 0.0f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,14 +49,72 @@ class MainActivity : AppCompatActivity() {
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
         }
+
+        // Инициализация сенсоров
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+        accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+
+        Manifest.permission.POST_NOTIFICATIONS
         Toast.makeText(this, "Удерживайте кнопку для выбора своего фона", Toast.LENGTH_LONG).show()
         val button = findViewById<Button>(R.id.button)
         button.setOnClickListener {
-            // При долгом нажатии - выбор изображения, при обычном - случайный цвет
-            button.setOnLongClickListener {
-                checkPermissions()
-                true
+            changeBgWithColor()
+        }
+
+        button.setOnLongClickListener {
+            checkPermissions()
+            true
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Регистрация слушателя сенсора
+        accelerometer?.let {
+            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Отмена регистрации для экономии батареи
+        sensorManager.unregisterListener(this)
+    }
+
+    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+
+    override fun onSensorChanged(event: SensorEvent?) {
+        event?.let {
+            if (it.sensor.type == Sensor.TYPE_ACCELEROMETER) {
+                handleShake(it)
             }
+        }
+    }
+
+    private fun handleShake(event: SensorEvent) {
+        val currentTime = System.currentTimeMillis()
+
+        // Защита от слишком частых срабатываний
+        if (currentTime - lastShakeTime < 1000) return
+
+        val x = event.values[0]
+        val y = event.values[1]
+        val z = event.values[2]
+
+        val deltaX = x - lastX
+        val deltaY = y - lastY
+        val deltaZ = z - lastZ
+
+        lastX = x
+        lastY = y
+        lastZ = z
+
+        val acceleration = Math.sqrt(
+            (deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ).toDouble()
+        ).toFloat()
+
+        if (acceleration > SHAKE_THRESHOLD) {
+            lastShakeTime = currentTime
             changeBgWithColor()
         }
     }
