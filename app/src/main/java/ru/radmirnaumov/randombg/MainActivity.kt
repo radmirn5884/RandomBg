@@ -11,9 +11,12 @@ import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.util.Log
 import android.view.View
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -24,7 +27,6 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
-    // Константы для запросов
     companion object {
         private const val REQUEST_CODE_PERMISSION = 100
         private const val REQUEST_CODE_GALLERY = 101
@@ -44,6 +46,8 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
 
+        hideNavigationBar()
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
@@ -56,6 +60,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
         Manifest.permission.POST_NOTIFICATIONS
         Toast.makeText(this, "Удерживайте кнопку для выбора своего фона", Toast.LENGTH_LONG).show()
+        Handler(Looper.getMainLooper()).postDelayed({
+            Toast.makeText(this, "Нажмите на кнопку или потрясите телефон для смены фона", Toast.LENGTH_LONG).show()
+        }, 2000)
         val button = findViewById<Button>(R.id.button)
         button.setOnClickListener {
             changeBgWithColor()
@@ -67,8 +74,28 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
+    private fun hideNavigationBar() {
+        window.decorView.systemUiVisibility = (
+                View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        or View.SYSTEM_UI_FLAG_FULLSCREEN
+                        or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                        or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                )
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) {
+            hideNavigationBar()
+        }
+    }
+
     override fun onResume() {
         super.onResume()
+        hideNavigationBar()
+
         // Регистрация слушателя сенсора
         accelerometer?.let {
             sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
@@ -192,7 +219,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
-    // Расширение для установки фона из URI
     private fun View.setBackgroundURI(uri: Uri) {
         this.background = android.graphics.drawable.BitmapDrawable(
             resources,
