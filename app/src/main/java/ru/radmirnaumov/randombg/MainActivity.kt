@@ -28,18 +28,18 @@ import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : AppCompatActivity(), SensorEventListener {
     companion object {
-        private const val REQUEST_CODE_PERMISSION = 100
-        private const val REQUEST_CODE_GALLERY = 101
-        private const val REQUEST_CODE_COLOR = 102
-        private const val SHAKE_THRESHOLD = 7f
+        val REQUEST_CODE_PERMISSION = 100
+        val REQUEST_CODE_GALLERY = 101
+        val REQUEST_CODE_COLOR = 102
+        val SHAKE_THRESHOLD = 7f
     }
 
-    private lateinit var sensorManager: SensorManager
-    private var accelerometer: Sensor? = null
-    private var lastShakeTime: Long = 0
-    private var lastX: Float = 0.0f
-    private var lastY: Float = 0.0f
-    private var lastZ: Float = 0.0f
+    lateinit var sensorManager: SensorManager
+    var accelerometer: Sensor? = null
+    var lastShakeTime: Long = 0
+    var lastX: Float = 0.0f
+    var lastY: Float = 0.0f
+    var lastZ: Float = 0.0f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -54,7 +54,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
             insets
         }
 
-        // Инициализация сенсоров
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         accelerometer = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
 
@@ -74,7 +73,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
-    private fun hideNavigationBar() {
+    fun hideNavigationBar() {
         window.decorView.systemUiVisibility = (
                 View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
                         or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
@@ -96,7 +95,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         super.onResume()
         hideNavigationBar()
 
-        // Регистрация слушателя сенсора
         accelerometer?.let {
             sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL)
         }
@@ -104,7 +102,6 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
 
     override fun onPause() {
         super.onPause()
-        // Отмена регистрации для экономии батареи
         sensorManager.unregisterListener(this)
     }
 
@@ -118,10 +115,9 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
-    private fun handleShake(event: SensorEvent) {
+    fun handleShake(event: SensorEvent) {
         val currentTime = System.currentTimeMillis()
 
-        // Защита от слишком частых срабатываний
         if (currentTime - lastShakeTime < 1000) return
 
         val x = event.values[0]
@@ -146,7 +142,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
-    private fun changeBgWithColor() {
+    fun changeBgWithColor() {
         try {
             val colors = listOf(
                 Color.RED, Color.GREEN, Color.BLUE, Color.YELLOW, Color.CYAN,
@@ -171,7 +167,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
-    private fun checkPermissions() {
+    fun checkPermissions() {
         val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             Manifest.permission.READ_MEDIA_IMAGES
         } else {
@@ -185,7 +181,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
-    private fun openGallery() {
+    fun openGallery() {
         val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
         startActivityForResult(intent, REQUEST_CODE_GALLERY)
     }
@@ -219,7 +215,7 @@ class MainActivity : AppCompatActivity(), SensorEventListener {
         }
     }
 
-    private fun View.setBackgroundURI(uri: Uri) {
+    fun View.setBackgroundURI(uri: Uri) {
         this.background = android.graphics.drawable.BitmapDrawable(
             resources,
             MediaStore.Images.Media.getBitmap(contentResolver, uri)
